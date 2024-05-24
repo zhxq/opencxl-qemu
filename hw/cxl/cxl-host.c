@@ -214,9 +214,6 @@ static MemTxResult cxl_read_cfmws(void *opaque, hwaddr addr, uint64_t *data,
         /* Reads to invalid address return poison */
         return result;
     }
-    type = object_get_typename(OBJECT(d));
-
-    g_assert(addr < 0x8000000);
 
     if (cxl_is_remote_root_port(d)) {
         result = cxl_remote_cxl_mem_read_with_cache(d, addr + fw->base, data,
@@ -254,9 +251,6 @@ static MemTxResult cxl_write_cfmws(void *opaque, hwaddr addr, uint64_t data,
         /* Writes to invalid address are silent */
         return result;
     }
-    type = object_get_typename(OBJECT(d));
-
-    g_assert(addr < 0x8000000);
 
     if (cxl_is_remote_root_port(d)) {
         trace_cxl_write_cfmws("CXL.mem via RP", addr, size, data);
