@@ -239,15 +239,14 @@ void cxl_remote_mem_read(PCIDevice *d, uint64_t addr, uint64_t *val, int size)
         assert(0);
     }
 
-    cxl_io_completion_data_packet_t *cxl_packet =
-        wait_for_cxl_io_completion_data(crp->socket_fd, tag);
-    if (cxl_packet == NULL) {
+    uint64_t packet_size =
+        wait_for_cxl_io_completion_data(crp->socket_fd, tag, val);
+    if (packet_size == 0) {
         release_packet_entry(tag);
         trace_cxl_root_debug_message("Failed to get CXL.io CPLD response");
         assert(0);
     }
 
-    *val = cxl_packet->data;
     release_packet_entry(tag);
 }
 
