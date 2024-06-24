@@ -319,8 +319,8 @@ bool send_cxl_io_mem_read(int socket_fd, hwaddr hpa, int size, uint16_t *tag)
     packet.system_header.payload_type = CXL_IO;
     packet.system_header.payload_length = sizeof(packet);
 
-    packet.cxl_io_header.fmt_type = MRD_64B;
-    uint16_t hdr_length = round_up_to_nearest_dword(size);
+    packet.cxl_io_header.fmt_type = (size == 4 ? MRD_32B : MRD_64B);
+    uint16_t hdr_length = round_up_to_nearest_dword(size) / 4;
 
     packet.cxl_io_header.length_upper = EXTRACT_UPPER_2(hdr_length);
     packet.cxl_io_header.length_lower = EXTRACT_LOWER_8(hdr_length);
@@ -357,7 +357,7 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
     cxl_io_mem_wr_packet_64b_t packet_64;
     bool successful;
 
-    uint16_t hdr_length = round_up_to_nearest_dword(size);
+    uint16_t hdr_length = round_up_to_nearest_dword(size) / 4;
     hpa = htonll(hpa);
 
     if (size > 4) {
@@ -378,13 +378,13 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
         packet_64.system_header.payload_length = sizeof(packet_64);
         packet_64.data = val;
         successful = write(socket_fd, &packet_64, sizeof(packet_64)) != -1;
-        trace_cxl_socket_debug_num("MRD_64B Packet Size", sizeof(packet_64));
+        trace_cxl_socket_debug_num("MWR_64B Packet Size", sizeof(packet_64));
     } else {
         assert(size == 4);
         assert(val < 0xFFFFFFFF);
         packet.system_header.payload_type = CXL_IO;
 
-        packet.cxl_io_header.fmt_type = MWR_64B;
+        packet.cxl_io_header.fmt_type = MWR_32B;
 
         packet.cxl_io_header.length_upper = EXTRACT_UPPER_2(hdr_length);
         packet.cxl_io_header.length_lower = EXTRACT_LOWER_8(hdr_length);
@@ -397,7 +397,7 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
         packet.system_header.payload_length = sizeof(packet);
         packet.data = (uint32_t)(val & 0xFFFFFFFF);
         successful = write(socket_fd, &packet, sizeof(packet)) != -1;
-        trace_cxl_socket_debug_num("MRD_64B Packet Size", sizeof(packet));
+        trace_cxl_socket_debug_num("MWR_32B Packet Size", sizeof(packet));
     }
 
     trace_cxl_socket_debug_msg("[Sending Packet] END");
