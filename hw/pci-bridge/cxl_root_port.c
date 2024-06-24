@@ -20,6 +20,7 @@
 #include "qemu/osdep.h"
 #include "qemu/log.h"
 #include "qemu/range.h"
+#include "hw/cxl/cxl_endian.h"
 #include "hw/pci/pci_bridge.h"
 #include "hw/pci/pcie_port.h"
 #include "hw/pci/msi.h"
@@ -308,6 +309,22 @@ void cxl_remote_config_space_read(PCIDevice *d, uint16_t bdf, uint32_t offset,
     }
 
     wait_for_cxl_io_cfg_completion(crp->socket_fd, tag, val);
+
+    /*
+    Since now the OpenCXL backend assumes 4-byte aligned data reqs,
+    We are going to make sure that we can read the data correctly
+    from correct locations.
+    */
+
+    if (offset == 0x0e && size == 1) {
+        printf("Test");
+    }
+
+    uint32_t floor_diff = offset - ((offset / 4) * 4);
+    uint32_t ceil_diff = (((offset / 4) + 1) * 4) - offset;
+
+    *val <<= (ceil_diff - size) * 8;
+    *val >>= ((floor_diff + ceil_diff - size)) * 8;
 
     release_packet_entry(tag);
 }
