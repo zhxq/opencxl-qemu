@@ -328,10 +328,11 @@ bool send_cxl_io_mem_read(int socket_fd, hwaddr hpa, int size, uint16_t *tag)
     packet.mreq_header.req_id = 0;
     packet.mreq_header.tag = *tag;
 
-    hpa = htonll(hpa);
+    packet.mreq_header.addr_lower = (hpa & 0xFF) >> 2; // Bottom bit
 
-    packet.mreq_header.addr_upper = (hpa >> 8) & 0xFFFFFFFFFFFFFF;
-    packet.mreq_header.addr_lower = (hpa & 0xFF) >> 2;
+    /* No need to do >> 8 because htonll reverts the byte order
+       and the mask removes the MSByte (was LSByte) automatically. */
+    packet.mreq_header.addr_upper = htonll(hpa) & 0xFFFFFFFFFFFFFF;
 
     trace_cxl_socket_debug_num("MRD_64B Packet Size", sizeof(packet));
 
@@ -358,7 +359,6 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
     bool successful;
 
     uint16_t hdr_length = round_up_to_nearest_dword(size) / 4;
-    hpa = htonll(hpa);
 
     if (size > 4) {
         assert(size == 8);
@@ -373,8 +373,8 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
         packet_64.mreq_header.req_id = 0;
         packet_64.mreq_header.tag = *tag;
 
-        packet_64.mreq_header.addr_upper = (hpa >> 8) & 0xFFFFFFFFFFFFFF;
-        packet_64.mreq_header.addr_lower = (hpa & 0xFF) >> 2;
+        packet_64.mreq_header.addr_lower = (hpa & 0xFF) >> 2; // Bottom bit
+        packet_64.mreq_header.addr_upper = htonll(hpa) & 0xFFFFFFFFFFFFFF;
         packet_64.system_header.payload_length = sizeof(packet_64);
         packet_64.data = val;
         successful = write(socket_fd, &packet_64, sizeof(packet_64)) != -1;
@@ -392,8 +392,8 @@ bool send_cxl_io_mem_write(int socket_fd, hwaddr hpa, uint64_t val, int size,
         packet.mreq_header.req_id = 0;
         packet.mreq_header.tag = *tag;
 
-        packet.mreq_header.addr_upper = (hpa >> 8) & 0xFFFFFFFFFFFFFF;
-        packet.mreq_header.addr_lower = (hpa & 0xFF) >> 2;
+        packet.mreq_header.addr_lower = (hpa & 0xFF) >> 2; // Bottom bit
+        packet.mreq_header.addr_upper = htonll(hpa) & 0xFFFFFFFFFFFFFF;
         packet.system_header.payload_length = sizeof(packet);
         packet.data = (uint32_t)(val & 0xFFFFFFFF);
         successful = write(socket_fd, &packet, sizeof(packet)) != -1;
