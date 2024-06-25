@@ -539,8 +539,8 @@ uint64_t wait_for_cxl_io_completion_data(int socket_fd, uint16_t tag,
 {
     trace_cxl_socket_debug_msg("[Receiving Packet] START");
 
-    // cxl_io_completion_data_packet_64b_t *packet = NULL;
     uint64_t packet_size = 0;
+
     while (true) {
         packet_table_entry_t *entry = get_packet_entry(tag);
         if (entry->packet_size > 0) {
@@ -556,13 +556,6 @@ uint64_t wait_for_cxl_io_completion_data(int socket_fd, uint16_t tag,
                 *data = ((cxl_io_completion_data_packet_64b_t *)entry->packet)
                             ->data;
             }
-
-            // for (uint32_t dword_offset = 0;
-            //      dword_offset < (packet->cxl_io_header.length_upper |
-            //                      packet->cxl_io_header.length_lower);
-            //      ++dword_offset) {
-            //     trace_cxl_socket_cxl_io_cpld(packet->data);
-            // }
             break;
         }
         if (!process_incoming_packets(socket_fd)) {
