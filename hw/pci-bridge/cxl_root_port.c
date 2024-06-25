@@ -315,11 +315,11 @@ void cxl_remote_config_space_read(PCIDevice *d, uint16_t bdf, uint32_t offset,
     from correct locations. Similar to CxlIoCfgWrPacket.get_value().
     */
 
-    uint32_t floor_diff = offset % 4;
-    uint32_t ceil_diff = 4 - floor_diff;
+    uint32_t lsb_diff = offset % 4;
+    uint32_t msb_diff = 4 - lsb_diff;
 
-    *val <<= (ceil_diff - size) * 8;
-    *val >>= ((floor_diff + ceil_diff - size)) * 8;
+    *val <<= (msb_diff - size) * 8;
+    *val >>= ((lsb_diff + msb_diff - size)) * 8;
 
     release_packet_entry(tag);
 }
@@ -338,6 +338,10 @@ void cxl_remote_config_space_write(PCIDevice *d, uint16_t bdf, uint32_t offset,
     const uint8_t bus = bdf >> 8;
     const uint8_t device = bdf & 0x1F >> 3;
     const uint8_t function = bdf & 0x7;
+
+    uint32_t lsb_diff = offset % 4;
+
+    val <<= lsb_diff * 8;
 
     if (type0) {
         trace_cxl_root_cxl_io_config_space_write0(bus, device, function, offset,
